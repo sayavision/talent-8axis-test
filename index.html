@@ -148,6 +148,12 @@
 
   <div id="resultCard" class="card" style="display:none;">
     <div id="resultContent"></div>
+        <div id="resultShare" style="display:none; margin-top:12px;">
+      <button type="button" id="copyResultBtn">結果テキストをコピー</button>
+      <button type="button" id="shareResultBtn">結果をシェア</button>
+      <p id="shareMessage" class="small"></p>
+    </div>
+
 
     <hr style="margin:14px 0;">
     <div class="result-title">4ドメインのレーダーチャート</div>
@@ -297,6 +303,12 @@
     const resultCard = document.getElementById("resultCard");
     const resultContent = document.getElementById("resultContent");
     let radarChart = null;
+    let latestShareText = "";
+const shareDiv = document.getElementById("resultShare");
+const copyBtn = document.getElementById("copyResultBtn");
+const shareBtn = document.getElementById("shareResultBtn");
+const shareMsg = document.getElementById("shareMessage");
+
 
     form.addEventListener("submit", function (e) {
       e.preventDefault();
@@ -426,6 +438,30 @@
 
       resultContent.innerHTML = html;
       resultCard.style.display = "block";
+            resultContent.innerHTML = html;
+      resultCard.style.display = "block";
+
+      // ★ ここからシェア用テキストを作る
+      let shareText = "【才能8軸診断 結果】\n\n";
+
+      shareText += "■ 4ドメインのバランス\n";
+      domainResultList.forEach(d => {
+        shareText += `・${d.domain}: ${d.percent}%\n`;
+      });
+
+      shareText += "\n■ 上位3軸\n";
+      top3.forEach(a => {
+        shareText += `・${a.label}（${a.domain}）: ${a.percent}%\n`;
+      });
+
+      shareText += "\n診断ツールはこちら：\n";
+      shareText += "https://sayavision.github.io/talent-8axis-test/\n";
+
+      latestShareText = shareText;
+      shareDiv.style.display = "block";
+      shareMsg.textContent = "";
+      // ★ ここまで追加
+
 
       // レーダーチャート描画
       const ctx = document.getElementById("domainRadar").getContext("2d");
@@ -465,6 +501,40 @@
 
       resultCard.scrollIntoView({ behavior: "smooth" });
     });
+    // ★ シェアボタンの動き
+copyBtn.onclick = async () => {
+  if (!latestShareText) {
+    shareMsg.textContent = "先に診断を完了してね。";
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(latestShareText);
+    shareMsg.textContent = "結果テキストをコピーしました。好きなアプリに貼りつけて使ってね。";
+  } catch (e) {
+    shareMsg.textContent = "コピーに失敗しました…ブラウザによって使えない場合があります。";
+  }
+};
+
+shareBtn.onclick = async () => {
+  if (!latestShareText) {
+    shareMsg.textContent = "先に診断を完了してね。";
+    return;
+  }
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: "才能8軸診断 結果",
+        text: latestShareText
+      });
+      shareMsg.textContent = "共有メニューを開きました。";
+    } catch (e) {
+      shareMsg.textContent = "共有がキャンセルされました。";
+    }
+  } else {
+    shareMsg.textContent = "このブラウザは共有機能に対応していないので、コピー機能を使ってね。";
+  }
+};
+
   </script>
 
 </body>
