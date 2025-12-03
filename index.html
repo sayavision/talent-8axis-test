@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>才能8軸診断（ベータ版）</title>
+  <title>才能8軸診断（エレメント版ベータ）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <!-- レーダーチャート用：Chart.js -->
@@ -104,7 +104,6 @@
     .axis-bar {
       height: 100%;
       width: 0%;
-      background: #4b7bec;
       transition: width 0.4s;
     }
     .axis-percent {
@@ -121,18 +120,14 @@
       color: #3730a3;
       margin-left: 4px;
     }
-    .type-name {
-      font-size: 1.05rem;
-      font-weight: 600;
-    }
   </style>
 </head>
 <body>
 
   <div class="card">
-    <h1>才能8軸診断（ベータ版）</h1>
+    <h1>才能8軸診断（エレメント版ベータ）</h1>
     <p class="small">
-      あなたの中にある<strong>実行・影響・思考・人間関係</strong>の4ドメインを、さらに8つの軸に分けて見ていきます。<br>
+      あなたの中にある<strong>4つのエレメント</strong>（EARTH／FIRE／AIR／WATER）を、さらに8つの軸に分けて見ていきます。<br>
       48個の質問に、直感で1〜5を選んでください。
     </p>
     <p class="small">
@@ -148,53 +143,85 @@
 
   <div id="resultCard" class="card" style="display:none;">
     <div id="resultContent"></div>
-        <div id="resultShare" style="display:none; margin-top:12px;">
+
+    <!-- ★ 結果シェアボタン（常に表示） -->
+    <div id="resultShare" style="margin-top:12px;">
       <button type="button" id="copyResultBtn">結果テキストをコピー</button>
       <button type="button" id="shareResultBtn">結果をシェア</button>
       <p id="shareMessage" class="small"></p>
     </div>
 
-
     <hr style="margin:14px 0;">
-    <div class="result-title">4ドメインのレーダーチャート</div>
+    <div class="result-title">4エレメントのレーダーチャート</div>
     <p class="small">全体のバランスを感覚的に眺めてみてください。</p>
     <canvas id="domainRadar" style="max-width: 100%;"></canvas>
   </div>
 
   <script>
-    // ---- 8軸定義 ----
+    // ---- 8軸定義（エレメント版） ----
     const axes = {
-      X1: { id: "X1", label: "構築・段取り軸", domain: "実行タイプ" },
-      X2: { id: "X2", label: "遂行・やり切り軸", domain: "実行タイプ" },
-      I1: { id: "I1", label: "発信・存在感軸", domain: "影響タイプ" },
-      I2: { id: "I2", label: "説得・推進軸", domain: "影響タイプ" },
-      T1: { id: "T1", label: "ロジカル・分析軸", domain: "思考タイプ" },
-      T2: { id: "T2", label: "学習・探究軸", domain: "思考タイプ" },
-      R1: { id: "R1", label: "共感・ケア軸", domain: "人間関係タイプ" },
-      R2: { id: "R2", label: "協働・チーム軸", domain: "人間関係タイプ" }
+      // EARTH：形にする領域
+      X1: { id: "X1", label: "大地のデザイン軸", domain: "EARTH｜形にする領域" },
+      X2: { id: "X2", label: "大地の実行軸",   domain: "EARTH｜形にする領域" },
+
+      // FIRE：人と場を動かす領域
+      I1: { id: "I1", label: "火の発信軸",     domain: "FIRE｜人と場を動かす領域" },
+      I2: { id: "I2", label: "火の推進軸",     domain: "FIRE｜人と場を動かす領域" },
+
+      // AIR：しくみを組む領域
+      T1: { id: "T1", label: "風の分析軸",     domain: "AIR｜しくみを組む領域" },
+      T2: { id: "T2", label: "風の探究軸",     domain: "AIR｜しくみを組む領域" },
+
+      // WATER：絆を育てる領域
+      R1: { id: "R1", label: "水の共感軸",     domain: "WATER｜絆を育てる領域" },
+      R2: { id: "R2", label: "水のチーム軸",   domain: "WATER｜絆を育てる領域" }
     };
 
+    // ---- 4エレメントの説明 ----
     const domainDescriptions = {
-      "実行タイプ": "やることを整理し、現実を前に進めていくドメイン。計画を立てる／段取りする／やり切る力。",
-      "影響タイプ": "人前に立ったり発信したりしながら、人や場を動かしていくドメイン。",
-      "思考タイプ": "情報を集めて整理し、本質を理解しようとするドメイン。考える・学ぶことが土台。",
-      "人間関係タイプ": "人の気持ちや関係性、チームの空気を大事にするドメイン。安心できる場づくりに向く。"
+      "EARTH｜形にする領域":
+        "現実世界で一歩ずつ「形にしていく」エリア。計画を立てる・段取りする・やり切ることで、アイデアを現実の結果につなげていく領域です。",
+
+      "FIRE｜人と場を動かす領域":
+        "言葉や存在感で、人と場に火を灯すエリア。発信・説得・リーダーシップなどを通して、エネルギーを生み出し、周りを動かしていく領域です。",
+
+      "AIR｜しくみを組む領域":
+        "一歩引いた視点で全体を見渡し、「しくみ」や「意味」を組み立てるエリア。分析・学び・戦略づくりで、本質をとらえていく領域です。",
+
+      "WATER｜絆を育てる領域":
+        "人の心や関係性に水をそそぎ、ゆっくりと絆を育てていくエリア。共感・サポート・チームワークを通して、安心できるつながりをつくる領域です。"
     };
 
+    // ---- 4エレメントごとの色 ----
+    const domainColors = {
+      "EARTH｜形にする領域": "#3B82F6",   // ブルー
+      "FIRE｜人と場を動かす領域": "#F97316", // オレンジ
+      "AIR｜しくみを組む領域":   "#8B5CF6",   // パープル
+      "WATER｜絆を育てる領域":   "#22C55E"    // グリーン
+    };
+
+    // ---- 8軸の詳細説明 ----
     const axisDescriptions = {
-      X1: "やることを整理し、流れや手順を組み立てる力。段取り・仕組み化・土台づくりが得意な軸です。",
-      X2: "決めたことを粘り強くやり切る力。コツコツ続ける・最後まで終わらせるところで力を発揮する軸です。",
-      I1: "前に出て話す／発信する／場を明るくする力。存在感や声でエネルギーを動かす軸です。",
-      I2: "人を納得させ、合意をつくり、巻き込みながら進める力。プレゼン・営業・リーダーシップに通じる軸です。",
-      T1: "情報や出来事を整理し、構造化して考える力。ロジカルに分析して判断する軸です。",
-      T2: "深く学び、探究し続ける力。知識や経験を蓄えて、自分なりに理解を深めていく軸です。",
-      R1: "人の気持ちに気づき、そっと寄りそう力。1対1の信頼関係やケアで力を発揮する軸です。",
-      R2: "人と一緒に進め、チームとしてうまく回す力。調整・サポート・チームビルディングの軸です。"
+      // EARTH
+      X1: "大地に道や畑をつくるように、やることを整理して流れや手順を組み立てる力。段取りや仕組み化で「進みやすい道」をつくる軸です。",
+      X2: "いちど植えた種を収穫まで育てきる農家さんのように、決めたことをコツコツ実行し、最後までやり切る力。完了させるところで力を発揮する軸です。",
+
+      // FIRE
+      I1: "暗い場所にパッと火を灯す焚き火のように、場を明るくしたり、自分を表現したりする力。存在感や発信でエネルギーを動かす軸です。",
+      I2: "小さな火種をキャンプファイヤーに育てるように、人を巻き込みながら物事を推し進める力。説得力やリーダーシップで場を動かす軸です。",
+
+      // AIR
+      T1: "高いところから風に乗って全体を見渡すように、情報や出来事を構造的にとらえる力。ロジカルに分析し、リスクやパターンを読み取る軸です。",
+      T2: "風のようにあちこちを巡りながら、知識や経験を集めてくる力。好奇心をエンジンに、学び・探究を深めていく軸です。",
+
+      // WATER
+      R1: "乾いたところに水がしみ込むように、人の気持ちにそっと寄りそい、安心感をもたらす力。共感・ケアを通して、心を潤す軸です。",
+      R2: "いくつもの小さな流れをひとつの川にまとめるように、人と人・チームとチームをつなぎ、協力しやすい場をつくる力。調整・チームワークの軸です。"
     };
 
     // ---- 質問定義（48問） ----
     const questions = [
-      // X1 構築・段取り軸
+      // X1 大地のデザイン軸
       { id: 1, axis: "X1", text: "やることを紙やアプリにリスト化してから行動することが多い。" },
       { id: 2, axis: "X1", text: "物事を進める前に、手順や流れを整理したくなる。" },
       { id: 3, axis: "X1", text: "「この順番でやると効率がいい」と考えながら動いている。" },
@@ -202,7 +229,7 @@
       { id: 5, axis: "X1", text: "みんなが迷わないように、ルールや仕組みを整えたくなる。" },
       { id: 6, axis: "X1", text: "ゴールから逆算してスケジュールを組むのが得意だと感じる。" },
 
-      // X2 遂行・やり切り軸
+      // X2 大地の実行軸
       { id: 7, axis: "X2", text: "途中で投げ出すのが嫌で、つい最後までやり切ってしまう。" },
       { id: 8, axis: "X2", text: "締め切りが近づくと、むしろ集中力が高まるほうだ。" },
       { id: 9, axis: "X2", text: "「途中までやって放置」が気持ち悪く感じる。" },
@@ -210,7 +237,7 @@
       { id: 11, axis: "X2", text: "人から頼まれたことを忘れないよう、きちんと終わらせようとする。" },
       { id: 12, axis: "X2", text: "長期的なプロジェクトでも、コツコツ続けることができる。" },
 
-      // I1 発信・存在感軸
+      // I1 火の発信軸
       { id: 13, axis: "I1", text: "人前で話すことに、そこまで強い抵抗はない。" },
       { id: 14, axis: "I1", text: "自分の考えや経験を、SNSやブログなどで発信したくなる。" },
       { id: 15, axis: "I1", text: "場が静かすぎると、つい話題を振ったり盛り上げたりしてしまう。" },
@@ -218,7 +245,7 @@
       { id: 17, axis: "I1", text: "初対面の人とも、わりとすぐに会話を広げられる。" },
       { id: 18, axis: "I1", text: "「あなたがいると場の雰囲気が明るくなる」と言われたことがある。" },
 
-      // I2 説得・推進軸
+      // I2 火の推進軸
       { id: 19, axis: "I2", text: "みんなの意見を聞いたうえで、「じゃあこうしよう」と方向性を示すことが多い。" },
       { id: 20, axis: "I2", text: "企画やアイデアを、人に分かりやすくプレゼンするのが好きだ。" },
       { id: 21, axis: "I2", text: "相手に納得してもらえる説明の仕方を考えるのが得意だ。" },
@@ -226,7 +253,7 @@
       { id: 23, axis: "I2", text: "自分がいいと思ったものは、人にも勧めたくなる。" },
       { id: 24, axis: "I2", text: "会議や話し合いで、最終的に結論をまとめる役割になることが多い。" },
 
-      // T1 ロジカル・分析軸
+      // T1 風の分析軸
       { id: 25, axis: "T1", text: "情報を聞いたとき「なぜそうなるのか？」を考えたくなる。" },
       { id: 26, axis: "T1", text: "問題が起きると、原因を分析して再発防止策を考える。" },
       { id: 27, axis: "T1", text: "データや数字を見て判断するのが好きだ。" },
@@ -234,7 +261,7 @@
       { id: 29, axis: "T1", text: "複雑な話を構造化して、図や箇条書きでまとめるのが得意だ。" },
       { id: 30, axis: "T1", text: "先のリスクや抜け漏れに、比較的早く気づく方だ。" },
 
-      // T2 学習・探究軸
+      // T2 風の探究軸
       { id: 31, axis: "T2", text: "興味を持ったテーマは、ネットや本で徹底的に調べたくなる。" },
       { id: 32, axis: "T2", text: "学びのための講座や本に、お金や時間を使うことに抵抗が少ない。" },
       { id: 33, axis: "T2", text: "「なぜ？」「どういう仕組み？」と深く掘り下げて考えるのが好きだ。" },
@@ -242,7 +269,7 @@
       { id: 35, axis: "T2", text: "新しい知識や考え方に触れるとワクワクする。" },
       { id: 36, axis: "T2", text: "学んだことを自分なりに整理して、メモやノートにまとめることが多い。" },
 
-      // R1 共感・ケア軸
+      // R1 水の共感軸
       { id: 37, axis: "R1", text: "人の表情や声のトーンから、気持ちの変化に敏感だと思う。" },
       { id: 38, axis: "R1", text: "悩んでいる人の話を聞くと、つい親身になってしまう。" },
       { id: 39, axis: "R1", text: "相手が傷つかないような言い方を選びがちだ。" },
@@ -250,7 +277,7 @@
       { id: 41, axis: "R1", text: "相手の立場に立って考える癖がある。" },
       { id: 42, axis: "R1", text: "誰かが疎外されている雰囲気に気づくと、放っておけない。" },
 
-      // R2 協働・チーム軸
+      // R2 水のチーム軸
       { id: 43, axis: "R2", text: "一人でやるより、誰かと一緒に進める方がやる気が出る。" },
       { id: 44, axis: "R2", text: "チームのメンバーそれぞれの強みや個性を意識して見ている。" },
       { id: 45, axis: "R2", text: "役割分担やスケジュールを調整することが多い。" },
@@ -298,17 +325,16 @@
       container.appendChild(wrap);
     });
 
-    // ---- 採点処理 ----
+    // ---- 採点処理＆結果表示 ----
     const form = document.getElementById("quizForm");
     const resultCard = document.getElementById("resultCard");
     const resultContent = document.getElementById("resultContent");
+    const shareDiv = document.getElementById("resultShare");
+    const copyBtn = document.getElementById("copyResultBtn");
+    const shareBtn = document.getElementById("shareResultBtn");
+    const shareMsg = document.getElementById("shareMessage");
     let radarChart = null;
     let latestShareText = "";
-const shareDiv = document.getElementById("resultShare");
-const copyBtn = document.getElementById("copyResultBtn");
-const shareBtn = document.getElementById("shareResultBtn");
-const shareMsg = document.getElementById("shareMessage");
-
 
     form.addEventListener("submit", function (e) {
       e.preventDefault();
@@ -385,8 +411,8 @@ const shareMsg = document.getElementById("shareMessage");
       // 結果HTML生成
       let html = "";
 
-      html += `<div class="result-title">4ドメインのバランス</div>`;
-      html += `<p class="small">数字が高いほど、そのドメインの才能を今よく使っている可能性が高いです。</p>`;
+      html += `<div class="result-title">4エレメントのバランス</div>`;
+      html += `<p class="small">数字が高いほど、そのエレメントの才能を今よく使っている可能性が高いです。</p>`;
 
       domainResultList.forEach((d, index) => {
         html += `
@@ -395,7 +421,7 @@ const shareMsg = document.getElementById("shareMessage");
               ${index + 1}. ${d.domain}
             </div>
             <div class="axis-bar-wrap">
-              <div class="axis-bar" style="width:${d.percent}%;"></div>
+              <div class="axis-bar" style="width:${d.percent}%; background:${domainColors[d.domain]};"></div>
             </div>
             <div class="axis-percent">${d.percent}%</div>
           </div>
@@ -416,7 +442,7 @@ const shareMsg = document.getElementById("shareMessage");
               ${index < 3 ? `<span class="badge">メイン才能</span>` : ""}
             </div>
             <div class="axis-bar-wrap">
-              <div class="axis-bar" style="width:${a.percent}%;"></div>
+              <div class="axis-bar" style="width:${a.percent}%; background:${domainColors[a.domain]};"></div>
             </div>
             <div class="axis-percent">${a.percent}%</div>
           </div>
@@ -438,30 +464,22 @@ const shareMsg = document.getElementById("shareMessage");
 
       resultContent.innerHTML = html;
       resultCard.style.display = "block";
-            resultContent.innerHTML = html;
-      resultCard.style.display = "block";
 
-      // ★ ここからシェア用テキストを作る
-      let shareText = "【才能8軸診断 結果】\n\n";
-
-      shareText += "■ 4ドメインのバランス\n";
+      // ★ シェア用テキストを作成
+      let shareText = "【才能8軸診断（エレメント版） 結果】\n\n";
+      shareText += "■ 4エレメントのバランス\n";
       domainResultList.forEach(d => {
         shareText += `・${d.domain}: ${d.percent}%\n`;
       });
-
       shareText += "\n■ 上位3軸\n";
       top3.forEach(a => {
         shareText += `・${a.label}（${a.domain}）: ${a.percent}%\n`;
       });
-
       shareText += "\n診断ツールはこちら：\n";
       shareText += "https://sayavision.github.io/talent-8axis-test/\n";
 
       latestShareText = shareText;
-      shareDiv.style.display = "block";
       shareMsg.textContent = "";
-      // ★ ここまで追加
-
 
       // レーダーチャート描画
       const ctx = document.getElementById("domainRadar").getContext("2d");
@@ -478,7 +496,7 @@ const shareMsg = document.getElementById("shareMessage");
           data: {
             labels: labels,
             datasets: [{
-              label: "ドメインバランス",
+              label: "エレメントバランス",
               data: data,
               fill: true,
               backgroundColor: "rgba(75, 123, 236, 0.2)",
@@ -501,40 +519,40 @@ const shareMsg = document.getElementById("shareMessage");
 
       resultCard.scrollIntoView({ behavior: "smooth" });
     });
-    // ★ シェアボタンの動き
-copyBtn.onclick = async () => {
-  if (!latestShareText) {
-    shareMsg.textContent = "先に診断を完了してね。";
-    return;
-  }
-  try {
-    await navigator.clipboard.writeText(latestShareText);
-    shareMsg.textContent = "結果テキストをコピーしました。好きなアプリに貼りつけて使ってね。";
-  } catch (e) {
-    shareMsg.textContent = "コピーに失敗しました…ブラウザによって使えない場合があります。";
-  }
-};
 
-shareBtn.onclick = async () => {
-  if (!latestShareText) {
-    shareMsg.textContent = "先に診断を完了してね。";
-    return;
-  }
-  if (navigator.share) {
-    try {
-      await navigator.share({
-        title: "才能8軸診断 結果",
-        text: latestShareText
-      });
-      shareMsg.textContent = "共有メニューを開きました。";
-    } catch (e) {
-      shareMsg.textContent = "共有がキャンセルされました。";
-    }
-  } else {
-    shareMsg.textContent = "このブラウザは共有機能に対応していないので、コピー機能を使ってね。";
-  }
-};
+    // ---- シェアボタンの挙動 ----
+    copyBtn.onclick = async () => {
+      if (!latestShareText) {
+        shareMsg.textContent = "先に診断を完了してね。";
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(latestShareText);
+        shareMsg.textContent = "結果テキストをコピーしました。好きなアプリに貼りつけて使ってね。";
+      } catch (e) {
+        shareMsg.textContent = "コピーに失敗しました…ブラウザによっては使えない場合があります。";
+      }
+    };
 
+    shareBtn.onclick = async () => {
+      if (!latestShareText) {
+        shareMsg.textContent = "先に診断を完了してね。";
+        return;
+      }
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: "才能8軸診断（エレメント版）結果",
+            text: latestShareText
+          });
+          shareMsg.textContent = "共有メニューを開きました。";
+        } catch (e) {
+          shareMsg.textContent = "共有がキャンセルされました。";
+        }
+      } else {
+        shareMsg.textContent = "このブラウザは共有機能に対応していないので、コピー機能を使ってね。";
+      }
+    };
   </script>
 
 </body>
